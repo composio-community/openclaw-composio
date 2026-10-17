@@ -4,6 +4,7 @@ read_when:
   - You want to enable web_search or web_fetch
   - You need Brave Search API key setup
   - You want to use Perplexity Sonar for web search
+  - You want to call Parallel Search MCP with the mcporter skill
 ---
 
 # Web tools
@@ -255,3 +256,51 @@ Notes:
 - Responses are cached (default 15 minutes) to reduce repeated fetches.
 - If you use tool profiles/allowlists, add `web_search`/`web_fetch` or `group:web`.
 - If the Brave key is missing, `web_search` returns a short setup hint with a docs link.
+
+## Optional Parallel Search MCP with mcporter
+
+The bundled `mcporter` [skill](/tools/skills) can call
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp) for
+free web search and page fetching without a Parallel account or API key.
+Anonymous searches use Fast mode and have lower rate limits than authenticated use.
+These calls run through `mcporter`; the built-in `web_search` and `web_fetch`
+tools keep their configured behavior.
+
+Install the CLI on the gateway host for the skill's binary eligibility check.
+This version supports the repository's Node 22 runtime:
+
+```bash
+npm install -g mcporter@0.9.0
+```
+
+For sandboxed agents, install it inside the container too and make the workspace
+configuration available there. See [skill sandbox requirements](/tools/skills#gating-load-time-filters).
+
+Run the following from your agent workspace. It writes `config/mcporter.json` in
+that workspace. Choose an unused server name if `parallel-search` already exists,
+since `config add` replaces an entry with the same name.
+
+```bash
+mcporter config add parallel-search https://search.parallel.ai/mcp \
+  --scope project --transport http \
+  --header 'User-Agent=openclaw-composio/parallel-search'
+mcporter list parallel-search --schema
+```
+
+Search, then fetch a relevant page. Generate a session ID once and reuse it for
+related calls in the same conversation:
+
+```bash
+parallel_session=$(node -e 'console.log(crypto.randomUUID())')
+mcporter call parallel-search.web_search \
+  objective='Find the official Node.js release schedule' \
+  search_queries='["Node.js official release schedule"]' \
+  session_id="$parallel_session"
+mcporter call parallel-search.web_fetch \
+  urls='["https://nodejs.org/en/about/previous-releases"]' \
+  session_id="$parallel_session"
+```
+
+Replace the fetch URL with a page you want to read. Check eligibility with
+`moltbot skills info mcporter` and ensure `mcporter` is on `PATH` where the agent
+executes commands. See [Skills](/tools/skills) for eligibility and allowlist settings.
