@@ -266,12 +266,15 @@ Anonymous searches use Fast mode and have lower rate limits than authenticated u
 These calls run through `mcporter`; the built-in `web_search` and `web_fetch`
 tools keep their configured behavior.
 
-Install the CLI on the gateway host, where the skill runs. This version supports
-the repository's Node 22 runtime:
+Install the CLI on the gateway host for the skill's binary eligibility check.
+This version supports the repository's Node 22 runtime:
 
 ```bash
 npm install -g mcporter@0.9.0
 ```
+
+For sandboxed agents, install it inside the container too and make the workspace
+configuration available there. See [skill sandbox requirements](/tools/skills#gating-load-time-filters).
 
 Run the following from your agent workspace. It writes `config/mcporter.json` in
 that workspace. Choose an unused server name if `parallel-search` already exists,
@@ -298,7 +301,6 @@ mcporter call parallel-search.web_fetch \
   session_id="$parallel_session"
 ```
 
-Replace the fetch URL with a page you want to read. To make the CLI available to
-the assistant, check `moltbot skills info mcporter` and ensure the gateway can
-find `mcporter` on its `PATH`. See [Skills](/tools/skills) for eligibility and
-allowlist settings.
+Replace the fetch URL with a page you want to read. Check eligibility with
+`moltbot skills info mcporter` and ensure `mcporter` is on `PATH` where the agent
+executes commands. See [Skills](/tools/skills) for eligibility and allowlist settings.
